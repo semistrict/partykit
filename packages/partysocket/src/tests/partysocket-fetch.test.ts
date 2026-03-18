@@ -34,6 +34,19 @@ describe.skipIf(!!process.env.GITHUB_ACTIONS)("PartySocket.fetch", () => {
     expect(calledUrl).toContain("http://localhost:1999");
   });
 
+  test("uses http:// for *.localhost", async () => {
+    const mockFetch = vitest.fn().mockResolvedValue(new Response("ok"));
+
+    await PartySocket.fetch({
+      host: "vumela-web.devup.localhost:9909",
+      room: "test",
+      fetch: mockFetch
+    });
+
+    const calledUrl = mockFetch.mock.calls[0][0];
+    expect(calledUrl).toContain("http://vumela-web.devup.localhost:9909");
+  });
+
   test("uses http:// for 127.0.0.1", async () => {
     const mockFetch = vitest.fn().mockResolvedValue(new Response("ok"));
 

@@ -59,6 +59,43 @@ function generateUUID(): string {
   });
 }
 
+function getHostname(host: string): string {
+  try {
+    return new URL(`http://${host}`).hostname.toLowerCase();
+  } catch {
+    if (host.startsWith("[")) {
+      const closingBracketIndex = host.indexOf("]");
+      if (closingBracketIndex !== -1) {
+        return host.slice(0, closingBracketIndex + 1).toLowerCase();
+      }
+    }
+    return host.split(":")[0]!.toLowerCase();
+  }
+}
+
+function isPrivate172Range(hostname: string): boolean {
+  const octets = hostname.split(".");
+  if (octets.length !== 4 || octets[0] !== "172") {
+    return false;
+  }
+  const secondOctet = Number.parseInt(octets[1] ?? "", 10);
+  return secondOctet >= 16 && secondOctet <= 31;
+}
+
+function shouldUseInsecureProtocol(host: string): boolean {
+  const hostname = getHostname(host);
+  return (
+    hostname === "localhost" ||
+    hostname.endsWith(".localhost") ||
+    hostname === "127.0.0.1" ||
+    hostname === "[::1]" ||
+    hostname === "[::ffff:7f00:1]" ||
+    hostname.startsWith("192.168.") ||
+    hostname.startsWith("10.") ||
+    isPrivate172Range(hostname)
+  );
+}
+
 function getPartyInfo(
   partySocketOptions: PartySocketOptions | PartyFetchOptions,
   defaultProtocol: "http" | "ws",
@@ -90,14 +127,7 @@ function getPartyInfo(
   const path = rawPath ? `/${rawPath}` : "";
   const protocol =
     rawProtocol ||
-    (host.startsWith("localhost:") ||
-    host.startsWith("127.0.0.1:") ||
-    host.startsWith("192.168.") ||
-    host.startsWith("10.") ||
-    (host.startsWith("172.") &&
-      host.split(".")[1] >= "16" &&
-      host.split(".")[1] <= "31") ||
-    host.startsWith("[::ffff:7f00:1]:")
+    (shouldUseInsecureProtocol(host)
       ? // http / ws
         defaultProtocol
       : // https / wss

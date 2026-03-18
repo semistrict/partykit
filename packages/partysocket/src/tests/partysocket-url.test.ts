@@ -37,6 +37,15 @@ describe.skipIf(!!process.env.GITHUB_ACTIONS)(
       expect(ps.roomUrl).toContain("ws://localhost:1999");
     });
 
+    test("uses ws:// for *.localhost", () => {
+      const ps = new PartySocket({
+        host: "vumela-web.devup.localhost:9909",
+        room: "test",
+        startClosed: true
+      });
+      expect(ps.roomUrl).toContain("ws://vumela-web.devup.localhost:9909");
+    });
+
     test("uses ws:// for 127.0.0.1", () => {
       const ps = new PartySocket({
         host: "127.0.0.1:1999",
